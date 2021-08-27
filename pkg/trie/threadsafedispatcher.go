@@ -2,7 +2,10 @@ package trie
 
 import (
 	"encoding/json"
+	"errors"
 	"sync"
+
+	"github.com/google/logger"
 )
 
 /*
@@ -40,35 +43,40 @@ func (s *ThreadSafeDispatcher) DispatchRaw(message []byte) ([]byte, error) {
 
 	switch command {
 	case CMD_INSERT:
+		logger.Infof("inserting %s", message[1:])
 		result, err := s.DispatchInsert(string(message[1:]))
 		if err != nil {
 			return nil, err
 		}
 		return json.Marshal(result)
 	case CMD_DELETE:
+		logger.Infof("deleting %s", message[1:])
 		result, err := s.DispatchDelete(string(message[1:]))
 		if err != nil {
 			return nil, err
 		}
 		return json.Marshal(result)
 	case CMD_EXISTS:
+		logger.Infof("checking if %s exists", message[1:])
 		result, err := s.DispatchExists(string(message[1:]))
 		if err != nil {
 			return nil, err
 		}
 		return json.Marshal(result)
 	case CMD_COMPLETIONS:
+		logger.Infof("completing %s", message[1:])
 		result, err := s.DispatchCompetions(string(message[1:]))
 		if err != nil {
 			return nil, err
 		}
 		return json.Marshal(result)
 	case CMD_KEYS:
+		logger.Infof("listing keys")
 		result := s.DispatchKeys()
 		return json.Marshal(result)
 	}
 
-	return []byte{}, nil
+	return []byte{}, errors.New("invalid command")
 }
 
 /*
