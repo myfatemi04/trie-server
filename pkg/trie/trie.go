@@ -1,29 +1,31 @@
 package trie
 
-import "sync"
+import "errors"
 
 type Trie struct {
-	Leaves      map[byte]*Trie
-	IsLeaf      bool
-	accessMutex sync.Mutex
+	Leaves map[byte]*Trie
+	IsLeaf bool
 }
 
-func CreateTrie() Trie {
-	return Trie{
+func NewTrie() *Trie {
+	return &Trie{
 		Leaves: make(map[byte]*Trie),
 		IsLeaf: false,
 	}
 }
 
+const MAX_KEY_LENGTH = 256
+
 // Add adds a word to the trie, returning whether there was a change
-func (t *Trie) Add(key string) bool {
-	t.accessMutex.Lock()
-	defer t.accessMutex.Unlock()
+func (t *Trie) Add(key string) (bool, error) {
+	if len(key) >= MAX_KEY_LENGTH {
+		return false, errors.New("key is too long")
+	}
 
 	if len(key) == 0 {
 		previousIsLeaf := t.IsLeaf
 		t.IsLeaf = true
-		return t.IsLeaf != previousIsLeaf
+		return t.IsLeaf != previousIsLeaf, nil
 	}
 
 	first := key[0]
@@ -37,30 +39,33 @@ func (t *Trie) Add(key string) bool {
 	}
 
 	// Add the key to the leaf
-	changed := t.Leaves[first].Add(key[1:])
-	return changed
+	return t.Leaves[first].Add(key[1:])
 }
 
 // Remove removes a word from the trie, returning whether there was a change
-func (t *Trie) Remove(key string) bool {
-	t.accessMutex.Lock()
-	defer t.accessMutex.Unlock()
+func (t *Trie) Remove(key string) (bool, error) {
+	if len(key) >= MAX_KEY_LENGTH {
+		return false, errors.New("key is too long")
+	}
 
 	if len(key) == 0 {
 		previousIsLeaf := t.IsLeaf
 		t.IsLeaf = false
-		return t.IsLeaf != previousIsLeaf
+		return t.IsLeaf != previousIsLeaf, nil
 	}
 
 	first := key[0]
 
 	if _, ok := t.Leaves[first]; !ok {
 		// The key doesn't exist
-		return false
+		return false, nil
 	}
 
 	// Remove the key from the leaf
-	changed := t.Leaves[first].Remove(key[1:])
+	changed, err := t.Leaves[first].Remove(key[1:])
+	if err != nil {
+		return changed, err
+	}
 
 	if changed {
 		leaf := t.Leaves[first]
@@ -70,22 +75,23 @@ func (t *Trie) Remove(key string) bool {
 		}
 	}
 
-	return changed
+	return changed, err
 }
 
 // Has returns whether the trie contains a key
-func (t *Trie) Has(key string) bool {
-	t.accessMutex.Lock()
-	defer t.accessMutex.Unlock()
+func (t *Trie) Has(key string) (bool, error) {
+	if len(key) >= MAX_KEY_LENGTH {
+		return false, errors.New("key is too long")
+	}
 
 	if len(key) == 0 {
-		return t.IsLeaf
+		return t.IsLeaf, nil
 	}
 
 	first := key[0]
 
 	if _, ok := t.Leaves[first]; !ok {
-		return false
+		return false, nil
 	}
 
 	return t.Leaves[first].Has(key[1:])
@@ -93,25 +99,20 @@ func (t *Trie) Has(key string) bool {
 
 // IsEmpty returns whether the trie is empty
 func (t *Trie) IsEmpty() bool {
-	t.accessMutex.Lock()
-	defer t.accessMutex.Unlock()
-
 	return len(t.Leaves) == 0 && !t.IsLeaf
 }
 
 // Return all keys that begin with `prefix`
-func (t *Trie) Completions(prefix string) []string {
-	t.accessMutex.Lock()
-	defer t.accessMutex.Unlock()
-
+func (t *Trie) Completions(prefix string) ([]string, error) {
 	if len(prefix) == 0 {
-		return t.Keys()
+		return t.Keys(), nil
 	}
 
 	first := prefix[0]
 
+	// This prefix doesn't exist in the tree
 	if _, ok := t.Leaves[first]; !ok {
-		return []string{}
+		return []string{}, nil
 	}
 
 	return t.Leaves[first].Completions(prefix[1:])
@@ -119,9 +120,6 @@ func (t *Trie) Completions(prefix string) []string {
 
 // Size returns the number of keys in the trie
 func (t *Trie) Size() int {
-	t.accessMutex.Lock()
-	defer t.accessMutex.Unlock()
-
 	size := 0
 
 	for _, leaf := range t.Leaves {
@@ -137,9 +135,6 @@ func (t *Trie) Size() int {
 
 // Keys returns all keys in the trie
 func (t *Trie) Keys() []string {
-	t.accessMutex.Lock()
-	defer t.accessMutex.Unlock()
-
 	keys := make([]string, 0, t.Size())
 
 	for first, leaf := range t.Leaves {
