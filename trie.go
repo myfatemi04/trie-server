@@ -1,6 +1,8 @@
 package main
 
-import "errors"
+import (
+	"errors"
+)
 
 type Trie struct {
 	Leaves map[byte]*Trie
@@ -115,7 +117,16 @@ func (t *Trie) Completions(prefix string) ([]string, error) {
 		return []string{}, nil
 	}
 
-	return t.Leaves[first].Completions(prefix[1:])
+	leafCompletions, err := t.Leaves[first].Completions(prefix[1:])
+	if err != nil {
+		return nil, err
+	}
+
+	prefixedCompletions := make([]string, 0, len(leafCompletions))
+	for _, leafCompletion := range leafCompletions {
+		prefixedCompletions = append(prefixedCompletions, string(first)+leafCompletion)
+	}
+	return prefixedCompletions, nil
 }
 
 // Size returns the number of keys in the trie
@@ -136,6 +147,9 @@ func (t *Trie) Size() int {
 // Keys returns all keys in the trie
 func (t *Trie) Keys() []string {
 	keys := make([]string, 0, t.Size())
+	if t.IsLeaf {
+		keys = append(keys, "")
+	}
 
 	for first, leaf := range t.Leaves {
 		for _, leafKey := range leaf.Keys() {
