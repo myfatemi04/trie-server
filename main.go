@@ -1,16 +1,12 @@
 package main
 
 import (
-	"flag"
-	"fmt"
 	"net/http"
 	"os"
 
 	"github.com/google/logger"
 	"github.com/gorilla/websocket"
 )
-
-var port = flag.Uint("port", 80, "port to listen on")
 
 func main() {
 	output, err := os.OpenFile("output.log", os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0660)
@@ -22,10 +18,9 @@ func main() {
 
 	logger.Init("trie", true, false, output)
 
-	flag.Parse()
-
-	if *port > 65535 {
-		logger.Fatalf("port %d is invalid, please choose a port from 0 - 65535.", port)
+	port := os.Getenv("PORT")
+	if port == "" {
+		println("FATAL: $PORT must be set")
 		return
 	}
 
@@ -49,8 +44,7 @@ func main() {
 		server.HandleClient(conn)
 	})
 
-	logger.Infof("server starting on port %d", *port)
-
-	addr := fmt.Sprintf(":%d", *port)
+	addr := ":" + port
+	logger.Infof("server starting on %s", addr)
 	http.ListenAndServe(addr, nil)
 }
