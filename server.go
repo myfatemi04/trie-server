@@ -1,4 +1,4 @@
-package trie
+package main
 
 import (
 	"github.com/google/logger"

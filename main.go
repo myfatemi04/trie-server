@@ -8,7 +8,6 @@ import (
 
 	"github.com/google/logger"
 	"github.com/gorilla/websocket"
-	"github.com/myfatemi04/trie/pkg/trie"
 )
 
 var port = flag.Uint("port", 80, "port to listen on")
@@ -30,7 +29,7 @@ func main() {
 		return
 	}
 
-	server := trie.NewServer()
+	server := NewServer()
 
 	upgrader := websocket.Upgrader{
 		CheckOrigin: func(r *http.Request) bool {
