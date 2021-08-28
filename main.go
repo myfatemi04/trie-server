@@ -18,13 +18,11 @@ func main() {
 
 	logger.Init("trie", true, false, output)
 
-	// port := os.Getenv("PORT")
-	// if port == "" {
-	// 	println("FATAL: $PORT must be set")
-	// 	return
-	// }
-
-	port := "3333"
+	port := os.Getenv("PORT")
+	if port == "" {
+		println("FATAL: $PORT must be set")
+		return
+	}
 
 	server := NewServer()
 
