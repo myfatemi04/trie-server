@@ -65,6 +65,10 @@ Example Commands
 
 */
 func (s *ThreadSafeDispatcher) DispatchRaw(message []byte) ([]byte, error) {
+	if len(message) == 0 {
+		return nil, errors.New("empty message")
+	}
+
 	// First byte is the command code
 	command := message[0] - ASCII_0
 

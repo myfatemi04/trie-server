@@ -1,6 +1,7 @@
 package main
 
 import (
+	"io/ioutil"
 	"net/http"
 	"os"
 
@@ -38,7 +39,35 @@ func main() {
 		},
 	}
 
-	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+	// Handle one-time requests.
+	// These are simply POST requests with the body containing the encoded command.
+	http.HandleFunc("/once", func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != "POST" {
+			w.WriteHeader(http.StatusMethodNotAllowed)
+			return
+		}
+
+		message, err := ioutil.ReadAll(r.Body)
+		if err != nil {
+			logger.Errorf("Error reading request body: %v", err)
+			w.WriteHeader(http.StatusBadRequest)
+			return
+		}
+
+		logger.Infof("Received message: %s", message)
+
+		response, err := server.HandleMessage(message)
+		if err != nil {
+			logger.Errorf("Error handling message: %v", err)
+			w.WriteHeader(http.StatusBadRequest)
+			w.Write([]byte("e" + err.Error()))
+		} else {
+			w.WriteHeader(http.StatusOK)
+			w.Write([]byte("s" + string(response)))
+		}
+	})
+
+	http.HandleFunc("/ws", func(w http.ResponseWriter, r *http.Request) {
 		logger.Infof("received connection")
 
 		// Upgrade the connection to a websocket connection, allowing multiway communication.
