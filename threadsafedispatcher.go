@@ -72,6 +72,7 @@ func (s *ThreadSafeDispatcher) DispatchRaw(message []byte) ([]byte, error) {
 	case CMD_INSERT:
 		logger.Infof("inserting %s", message[1:])
 
+		// result: true if the key was inserted, false if it was already present
 		result, err := s.DispatchInsert(string(message[1:]))
 		if err != nil {
 			return nil, err
@@ -82,6 +83,7 @@ func (s *ThreadSafeDispatcher) DispatchRaw(message []byte) ([]byte, error) {
 	case CMD_DELETE:
 		logger.Infof("deleting %s", message[1:])
 
+		// result: true if the key was deleted, false if it was not present
 		result, err := s.DispatchDelete(string(message[1:]))
 		if err != nil {
 			return nil, err
@@ -92,6 +94,7 @@ func (s *ThreadSafeDispatcher) DispatchRaw(message []byte) ([]byte, error) {
 	case CMD_EXISTS:
 		logger.Infof("checking if %s exists", message[1:])
 
+		// result: true if the key exists, false if it does not
 		result, err := s.DispatchExists(string(message[1:]))
 		if err != nil {
 			return nil, err
@@ -102,6 +105,7 @@ func (s *ThreadSafeDispatcher) DispatchRaw(message []byte) ([]byte, error) {
 	case CMD_COMPLETIONS:
 		logger.Infof("completing %s", message[1:])
 
+		// result: list of completions
 		result, err := s.DispatchCompetions(string(message[1:]))
 		if err != nil {
 			return nil, err
@@ -116,6 +120,7 @@ func (s *ThreadSafeDispatcher) DispatchRaw(message []byte) ([]byte, error) {
 			return nil, errors.New("key listing command takes no arguments")
 		}
 
+		// result: list of keys
 		result := s.DispatchKeys()
 		return json.Marshal(result)
 
@@ -125,7 +130,7 @@ func (s *ThreadSafeDispatcher) DispatchRaw(message []byte) ([]byte, error) {
 }
 
 /*
-Insert a key to the Trie (thread-safe).
+Insert a key to the Trie, returning whether there was a change (thread-safe).
 */
 func (s *ThreadSafeDispatcher) DispatchInsert(key string) (bool, error) {
 	s.dispatcherMutex.Lock()
@@ -135,7 +140,7 @@ func (s *ThreadSafeDispatcher) DispatchInsert(key string) (bool, error) {
 }
 
 /*
-Delete a key from the Trie (thread-safe).
+Delete a key from the Trie, returning whether there was a change (thread-safe).
 */
 func (s *ThreadSafeDispatcher) DispatchDelete(key string) (bool, error) {
 	s.dispatcherMutex.Lock()
